@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <PackageJsonName Condition="$(PackageJsonName) == ''">pdf-number-extractor</PackageJsonName>
+    <PackageJsonVersion Condition="$(PackageJsonVersion) == ''">0.31.0</PackageJsonVersion>
+    <PackageJsonDescription Condition="$(PackageJsonDescription) == ''">Desktop app for extracting prefixed numbers from PDFs</PackageJsonDescription>
+    <PackageJsonAuthor Condition="$(PackageJsonAuthor) == ''">ESTANC</PackageJsonAuthor>
+    <PackageJsonLicense Condition="$(PackageJsonLicense) == ''">MIT</PackageJsonLicense>
+    <PackageJsonMain Condition="$(PackageJsonMain) == ''">app/main.js</PackageJsonMain>
+    <PackageJsonScriptsDev Condition="$(PackageJsonScriptsDev) == ''">electron .</PackageJsonScriptsDev>
+    <PackageJsonScriptsPackWin Condition="$(PackageJsonScriptsPackWin) == ''">electron-builder --win portable --config electron-builder.yml</PackageJsonScriptsPackWin>
+    <PackageJsonDependenciesElectronIsDev Condition="$(PackageJsonDependenciesElectronIsDev) == ''">^3.0.1</PackageJsonDependenciesElectronIsDev>
+    <PackageJsonDevdependenciesElectron Condition="$(PackageJsonDevdependenciesElectron) == ''">^31.3.1</PackageJsonDevdependenciesElectron>
+    <PackageJsonDevdependenciesElectronBuilder Condition="$(PackageJsonDevdependenciesElectronBuilder) == ''">^24.13.3</PackageJsonDevdependenciesElectronBuilder>
+  </PropertyGroup>
+</Project>

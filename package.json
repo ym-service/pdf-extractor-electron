@@ -1,0 +1,29 @@
+{
+  "name": "pdf-number-extractor",
+  "version": "0.32.0",
+  "description": "Extracts numbers from PDF files",
+  "main": "Frontend/app/main.js",
+  "scripts": {
+    "start": "xvfb-run -a --server-args='-screen 0 1280x960x24' sh -c 'fluxbox & electron . & x11vnc -display $DISPLAY -forever & websockify --web /usr/share/novnc/ 6080 localhost:5900'",
+    "dev": "npm run start",
+    "clean": "rimraf dist build release",
+    "build:py:no_ocr": "pyinstaller --noconfirm backend/process_pdfs.spec",
+    "build:py:ocr": "pyinstaller --noconfirm backend/backend_ocr.spec",
+    "dist:lite": "npm run clean && npm run build:py:no_ocr && cross-env NODE_ENV=production electron-builder --config electron-builder-lite.json",
+    "dist:full": "npm run clean && npm run build:py:no_ocr && npm run build:py:ocr && cross-env NODE_ENV=production electron-builder --config electron-builder-full.json",
+    "build": "npm run dist:full"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "electron": "^37.4.0",
+    "electron-builder": "^24.13.3",
+    "rimraf": "^6.0.1"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "electron-updater": "^6.6.2",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.149"
+  },
+  "author": "Yurii"
+}

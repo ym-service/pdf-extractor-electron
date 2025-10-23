@@ -1,0 +1,85 @@
+/* Общие стили для темного оформления */
+body {
+    background-color: #1a1a1a; /* Фоновый цвет страницы, чтобы окно выделялось */
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden; /* Убираем скроллбар у body */
+}
+
+/* Контейнер всего окна */
+.window-container {
+    background-color: #1e192e;
+    border-radius: 8px;
+    border: 1px solid #4a4a4a;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    height: 90vh; /* Высота окна */
+    width: 80vw; /* Ширина окна */
+    max-width: 1000px;
+    max-height: 700px;
+    margin: 5vh auto; /* Центрирование окна */
+}
+
+/* Заголовок окна, который можно будет перетаскивать */
+.title-bar {
+    -webkit-app-region: drag; /* Позволяет перетаскивать окно (для Electron и подобных) */
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 8px 8px 16px;
+    cursor: move;
+}
+
+/* Стили для кнопок управления окном */
+.window-controls {
+    -webkit-app-region: no-drag; /* Эти элементы не должны перетаскиваться */
+    display: flex;
+}
+
+.window-controls button {
+    width: 46px;
+    height: 32px;
+    border: none;
+    background-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    outline: none;
+}
+
+.window-controls button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.window-controls button.close-btn:hover {
+    background-color: #e81123;
+}
+
+.window-controls button.close-btn:hover svg {
+    stroke: white;
+}
+
+/* Стили для активной вкладки в боковой панели */
+.sidebar-item.active {
+    background-color: rgba(94, 82, 132, 0.5);
+    border-left: 3px solid #a370f7;
+    font-weight: 600;
+}
+
+/* Стилизация скроллбара */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #2b2d3e;
+}
+::-webkit-scrollbar-thumb {
+    background: #4a4a5a;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #5a5a6a;
+}

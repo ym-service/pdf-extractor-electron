@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        img-src 'self' data:;
+        font-src 'self' https://fonts.gstatic.com;
+        connect-src 'self';
+        object-src 'none';
+        base-uri 'self';
+      ">
+  <title>Version Expired</title>
+  <link rel="stylesheet" href="./vendor/tailwind.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    html, body { height: 100vh; margin: 0; overflow: hidden; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #1e192e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* -------- Title bar -------- */
+    #title-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      height: 32px;
+      flex-shrink: 0;
+      -webkit-app-region: drag;      /* перетаскиваем только бар */
+      padding-right: 4px;
+    }
+    .window-controls {
+      display: flex;
+      height: 100%;
+      -webkit-app-region: no-drag;   /* отключаем drag для контейнера кнопок */
+    }
+    .window-control-btn {
+      width: 46px;
+      height: 100%;
+      border: none;
+      background: transparent;
+      color: #d1d5db;
+      cursor: pointer;
+      outline: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: background-color .2s, color .2s;
+      -webkit-app-region: no-drag;   /* и для самой кнопки тоже! */
+    }
+    .window-control-btn:hover { background-color: rgba(255,255,255,0.1); }
+    #close-btn:hover { background-color: #ef4444; color: white; }
+
+    /* размеры иконок только в кнопках */
+    .window-control-btn svg { width: 12px; height: 12px; }
+
+    /* -------- Content -------- */
+    .content-wrapper {
+      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 1rem;
+    }
+
+    /* большой красный знак (4× от 64px = 256px) */
+    .status-icon { width: 256px; height: 256px; }
+  </style>
+</head>
+<body>
+  <div id="title-bar">
+    <div class="window-controls">
+      <button id="minimize-btn" class="window-control-btn" aria-label="Minimize" title="Minimize">
+        <svg viewBox="0 0 10 10" stroke="currentColor" fill="none" stroke-width="2">
+          <line x1="1" y1="5" x2="9" y2="5"/>
+        </svg>
+      </button>
+      <button id="maximize-btn" class="window-control-btn" aria-label="Maximize" title="Maximize">
+        <svg viewBox="0 0 10 10" stroke="currentColor" fill="none" stroke-width="2">
+          <rect x="1" y="1" width="8" height="8"/>
+        </svg>
+      </button>
+      <button id="close-btn" class="window-control-btn" aria-label="Close" title="Close">
+        <svg viewBox="0 0 10 10" stroke="currentColor" fill="none" stroke-width="2">
+          <line x1="1" y1="1" x2="9" y2="9"/>
+          <line x1="9" y1="1" x2="1" y2="9"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="content-wrapper">
+    <div class="max-w-md">
+      <svg class="mx-auto text-red-500 status-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+
+      <h2 class="mt-6 text-2xl sm:text-3xl font-bold">Version Expired</h2>
+      <p class="mt-2 text-md sm:text-lg text-gray-300">
+        Please update the application to the latest version.
+      </p>
+
+      <div class="mt-6 border-t border-gray-600 pt-5 relative">
+        <p class="text-sm sm:text-base text-gray-400">Contact the author: Yurii Milienin</p>
+        <a href="mailto:Yurii.Milienin@estanc.ee"
+           class="mt-3 block text-md sm:text-lg text-gray-300 hover:text-white transition-colors">
+          Yurii.Milienin@estanc.ee
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="./expired.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+    "appId": "com.yurii.pdfextractor",
+    "productName": "PDF Number Extractor",
+    "compression": "store",
+    "directories": {
+      "output": "release"
+    },
+    "asar": true,
+    
+    "files": [
+      "Frontend/**/*",
+      "package.json",
+      "!backend/",     
+      "!dist/",        
+      "!release/",     
+      "!.venv/"        
+    ],
+    "extraResources": [
+      {
+        "from": "dist/process_pdfs/",
+        "to": "backend/process_pdfs"
+      }     
+    ],
+    "win": {
+      "icon": "Frontend/assets/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false
+     }
+}

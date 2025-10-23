@@ -1,0 +1,18 @@
+{
+  "format": "txt",
+  "options": {
+    "prefix": "W"
+  },
+  "items": [
+    {
+      "text": "W1",
+      "composite_number": "TEST-W12345",
+      "page": 1,
+      "grid": "100,200",
+      "image_png_b64": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA",
+      "revision": 1,
+      "comment": "demo",
+      "sourceFile": {"name": "example.pdf", "path": "C:/pdf-extractor-electron/docs/example.pdf"}
+    }
+  ]
+}

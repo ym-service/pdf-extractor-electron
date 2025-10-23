@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules/
+
+# Build artifacts
+/Frontend/dist/
+/Frontend/build/
+/Frontend/app/vendor/
+/release/
+/dist/
+
+# Log files
+*.log
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# --- Codespace & Local Config ---
+
+# Log file for the virtual screen
+xvfb-error.log
+
+# Local configuration files (do not commit to repo)
+/Frontend/config.json
+settings.json

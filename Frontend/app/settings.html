@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Настройки</title>
+    <style>
+        html, body {
+            background-color: transparent !important;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100vh;
+        }
+        body {
+            box-sizing: border-box;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .window-container {
+            background-color: #1e192e;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            margin: 20px;
+            width: calc(100% - 40px);
+            height: calc(100% - 40px);
+            overflow: hidden;
+        }
+        .title-bar {
+            -webkit-app-region: drag;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 8px 8px 16px;
+            cursor: move;
+        }
+        .window-controls {
+            -webkit-app-region: no-drag;
+            display: flex;
+        }
+        .window-controls button {
+            width: 46px;
+            height: 32px;
+            border: none;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            outline: none;
+        }
+        .window-controls button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .window-controls button.close-btn:hover {
+            background-color: #e81123;
+        }
+        .window-controls button.close-btn:hover svg {
+            stroke: white;
+        }
+        .sidebar-item.active {
+            background-color: rgba(94, 82, 132, 0.5);
+            border-left: 3px solid #a370f7;
+            font-weight: 600;
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2b2d3e; }
+        ::-webkit-scrollbar-thumb { background: #4a4a5a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #5a5a6a; }
+
+        /* Стили для активной кнопки языка */
+        button[data-lang].active {
+            background-color: #a370f7;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="window-container">
+        <!-- Верхняя панель -->
+        <header class="title-bar">
+            <span class="font-semibold text-sm" data-lang="settingsTitle">Настройки</span>
+            <div class="window-controls">
+                <button id="minimize-btn"><svg width="10" height="10" viewBox="0 0 10 1" stroke="#e0e0e0" stroke-width="1.2"><line x1="0" y1="0.5" x2="10" y2="0.5" /></svg></button>
+                <button id="maximize-btn"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#e0e0e0" stroke-width="1.2"><rect x="0.5" y="0.5" width="9" height="9"/></svg></button>
+                <button id="close-btn" class="close-btn"><svg width="10" height="10" viewBox="0 0 10 10" stroke="#e0e0e0" stroke-width="1.2"><path d="M0.5,0.5 L9.5,9.5 M9.5,0.5 L0.5,9.5"/></svg></button>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <div class="flex flex-1 overflow-hidden">
+            <!-- Левая панель -->
+            <aside class="w-1/4 min-w-[200px] bg-[#171424] p-2 flex flex-col">
+                <nav class="space-y-1">
+                    <a href="#" class="sidebar-item active flex items-center px-4 py-2 text-sm rounded-md" data-tab="general">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span data-lang="navGeneral">Общие</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center px-4 py-2 text-sm rounded-md" data-tab="appearance">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span data-lang="navAppearance">Вид</span>
+                    </a>
+                    <a href="#" class="sidebar-item flex items-center px-4 py-2 text-sm rounded-md" data-tab="about">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span data-lang="navAbout">О программе</span>
+                    </a>
+                </nav>
+                <div class="mt-auto p-2 space-y-2">
+                    <!-- <h3 class="text-xs font-semibold text-gray-400 uppercase" data-lang="languageLabel">Язык</h3> -->
+                    <div class="flex space-x-2">
+                        <button data-lang="en" class="flex-1 px-2 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600">EN</button>
+                        <button data-lang="ru" class="flex-1 px-2 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600">RU</button>
+                        <button data-lang="et" class="flex-1 px-2 py-1 text-sm rounded-md bg-gray-700 hover:bg-gray-600">ET</button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Правая часть -->
+            <main class="flex-1 p-6 overflow-y-auto">
+                <div id="general" class="tab-content">
+                    <h2 class="text-2xl font-bold mb-6" data-lang="generalHeader">Общие настройки</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label for="prefix-input" class="block text-sm font-medium mb-1" data-lang="prefixLabel">Префикс для поиска</label>
+                            <input type="text" id="prefix-input" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2">
+                        </div>
+                        <div>
+                            <label for="max-digits-input" class="block text-sm font-medium mb-1" data-lang="maxDigitsLabel">Макс. кол-во цифр</label>
+                            <input type="number" id="max-digits-input" min="1" max="10" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2">
+                        </div>
+                        <div class="flex items-center">
+                            <input id="include-revision-checkbox" type="checkbox" class="h-4 w-4 text-indigo-500 bg-gray-700 border-gray-600 rounded">
+                            <label for="include-revision-checkbox" class="ml-3 block text-sm" data-lang="includeRevisionLabel">Включать ревизию в отчеты</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="latest-revision-checkbox" type="checkbox" class="h-4 w-4 text-indigo-500 bg-gray-700 border-gray-600 rounded">
+                            <label for="latest-revision-checkbox" class="ml-3 block text-sm" data-lang="latestRevisionLabel">Обрабатывать только последнюю ревизию</label>
+                        </div>
+                        <div class="flex items-center">
+                            <input id="remove-duplicates-checkbox" type="checkbox" class="h-4 w-4 text-indigo-500 bg-gray-700 border-gray-600 rounded">
+                            <label for="remove-duplicates-checkbox" class="ml-3 block text-sm" data-lang="removeDuplicatesLabel">Удалять дубликаты в CSV (оставлять длинный текст)</label>
+                        </div>
+                        <div class="flex items-center ocr-feature">
+                            <input id="use-ocr-checkbox" type="checkbox" class="h-4 w-4 text-indigo-500 bg-gray-700 border-gray-600 rounded">
+                            <label for="use-ocr-checkbox" class="ml-3 block text-sm" data-lang="useOcrLabel">Использовать OCR (нейросеть) - GPU/DirectML</label>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-6 border-t border-gray-700">
+                        <h3 class="text-xl font-bold mb-4" data-lang="screenshotHeader">Настройки скриншота</h3>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="screenshot-width-input" class="block text-sm font-medium mb-1" data-lang="screenshotWidthLabel">Ширина (пикс.)</label>
+                                    <input type="number" id="screenshot-width-input" min="20" max="1000" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2">
+                                </div>
+                                <div>
+                                    <label for="screenshot-height-input" class="block text-sm font-medium mb-1" data-lang="screenshotHeightLabel">Высота (пикс.)</label>
+                                    <input type="number" id="screenshot-height-input" min="20" max="1000" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">
+                                    <span data-lang="textPosXLabel">Позиция текста по горизонтали</span>: <span id="text-pos-x-value">50</span>%
+                                </label>
+                                <input id="text-pos-x-slider" type="range" min="0" max="100" value="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium">
+                                    <span data-lang="textPosYLabel">Позиция текста по вертикали</span>: <span id="text-pos-y-value">50</span>%
+                                </label>
+                                <input id="text-pos-y-slider" type="range" min="0" max="100" value="50" class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                            </div>
+                            <div class="mt-4 p-4 bg-[#2b2d3e] rounded-md flex items-center justify-center" style="min-height: 150px;">
+                                <div id="settings-capture-preview-box" class="relative bg-gray-500/20 border-2 border-dashed border-gray-400 overflow-hidden transition-all duration-150" style="width: 200px; height: 68px;">
+                                    <div id="settings-capture-text-preview" class="absolute bg-black/40 text-white text-xs px-2 py-1 rounded transition-all duration-150" style="left: 50%; top: 50%; transform: translate(-50%, -50%);">
+                                        <span data-lang="previewText">Текст</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="appearance" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-6" data-lang="appearanceHeader">Настройки вида</h2>
+                    <div class="space-y-6">
+                        <div>
+                            <label for="theme-select" class="block text-sm font-medium mb-1" data-lang="themeLabel">Тема оформления</label>
+                            <select id="theme-select" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2">
+                                <option value="dark" data-lang="themeDark">Темная</option>
+                                <option value="light" data-lang="themeLight">Светлая</option>
+                                <option value="system" data-lang="themeSystem">Системная</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="pdf-viewer-mode" data-lang="pdfViewerLabel"></label>
+                            <select id="pdf-viewer-mode" class="w-full bg-[#2b2d3e] border-[#4a4a5a] rounded-md p-2 text-white">
+                                <option value="builtin" data-lang="pdfViewerBuiltin"></option>
+                                <option value="system" data-lang="pdfViewerSystem"></option>
+                            </select>
+                        </div>
+
+                        <!-- Масштаб интерфейса главного окна -->
+                       <div>
+                        <label for="ui-scale-main" data-lang="uiScaleMainLabel"></label>
+                        <input type="range" id="ui-scale-main" min="0.5" max="1.0" step="0.05" class="w-full">
+                        <span id="ui-scale-main-value" data-lang="uiScaleMainValue">0.88</span>
+                        </div>
+                        <!-- Масштаб интерфейса окна настроек -->
+                        <div>
+                            <label for="ui-scale-settings" class="block text-sm font-medium mb-1">UI Scale (Settings Window)</label>
+                            <input type="range" id="ui-scale-settings" min="0.5" max="1.0" step="0.05" class="w-full">
+                            <span id="ui-scale-settings-value" class="text-xs text-gray-600">0.88</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="about" class="tab-content hidden">
+                    <h2 class="text-2xl font-bold mb-6" data-lang="aboutHeader">О программе</h2>
+                    <div class="text-center">
+                        <p id="app-name-display" class="text-lg">Загрузка...</p>
+                        <p id="app-version-display" class="text-gray-400">Загрузка...</p>
+                        <p class="mt-4" data-lang="copyright">© 2025.</p>
+                        <p class="mt-6">
+                            <a href="#" id="check-for-updates-link" class="text-sm text-indigo-400 hover:text-indigo-300 hover:underline" data-lang="checkForUpdates">Проверить обновления</a>
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-8 pt-6 border-t border-gray-700 flex justify-end space-x-3">
+                    <button id="save-btn" class="px-5 py-2 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700" data-lang="saveButton">Сохранить</button>
+                    <button id="cancel-btn" class="px-5 py-2 bg-gray-600 text-white text-sm rounded-md hover:bg-gray-700" data-lang="cancelButton">Отмена</button>
+                </div>
+            </main>
+        </div>
+    </div>
+    <script src="./settings.js" defer></script>
+</body>
+</html>
+

@@ -1,0 +1,22 @@
+{
+  "profiles": {
+    "Electron Frontend": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\nodejs\\npm.cmd",
+      "commandLineArgs": "run dev",
+      "workingDirectory": "C:\\pdf-extractor-electron",
+      "environmentVariables": {
+        "NODE_ENV": "development"
+      }
+    },
+    "Python Backend": {
+      "commandName": "Executable",
+      "executablePath": "C:\\pdf-extractor-electron\\backend\\.venv\\Scripts\\python.exe",
+      "commandLineArgs": "-m uvicorn app:app --host 127.0.0.1 --port 8787",
+      "workingDirectory": "C:\\pdf-extractor-electron\\backend",
+      "environmentVariables": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}

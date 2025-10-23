@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Number Extractor</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="./vendor/tailwind.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- JS (внешние, без инлайна — совместимо с CSP) -->
+  <script src="./vendor/jspdf.umd.min.js" defer></script>
+  <script src="./renderer.js" type="module" defer></script>
+
+  <style>
+    html, body { height: 100vh; overflow: hidden; margin: 0; }
+    body { font-family: 'Inter', sans-serif; display: flex; flex-direction: column; }
+    .content-container { flex-grow: 1; overflow-y: auto; }
+
+    /* Снять системный оранжевый фокус у наших кастомных кнопок */
+    .window-control-btn:focus,
+    .window-control-btn:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+    .window-control-btn::-moz-focus-inner { border: 0; }
+
+    /* ===== Title bar ===== */
+    #title-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      height: 32px; background-color: #f3f4f6; color: #1f2937;
+      position: relative; z-index: 9000; /* Lowered z-index */ flex-shrink: 0;
+    }
+    #drag-region { flex-grow: 1; height: 100%; -webkit-app-region: drag; }
+    .no-drag { -webkit-app-region: no-drag; }
+
+    .window-controls { display: flex; height: 100%; -webkit-app-region: no-drag; background-color: #f3f4f6; }
+    .window-control-btn {
+      width: 46px; height: 100%; border: none; background: transparent; color: inherit;
+      cursor: pointer; display: flex; justify-content: center; align-items: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .window-control-btn svg {
+      width: 12px; height: 12px; display: block; opacity: 1;
+      fill: currentColor;
+    }
+    .window-control-btn:hover { background-color: #e5e7eb; }
+    #close-btn:hover { background-color: #ef4444; color: #fff; }
+
+    /* ===== Light theme tweaks ===== */
+    #view-results-btn {
+      background-color: #22c55e; color: #ffffff; border: 1px solid rgba(16,185,129,.6);
+      box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+    }
+    #view-results-btn:hover { background-color: #16a34a; }
+    #view-results-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+    /* Visual feedback for export buttons on click */
+    #generate-report:active,
+    #export-txt:active,
+    #export-csv:active {
+      transform: translateY(1px);
+      filter: brightness(0.95);
+    }
+
+    /* ===== Dark theme ===== */
+    .dark body { background-color: #1e192e; }
+    .dark main { background-color: #2a2141; }
+    .dark #title-bar {
+      background-color: #2a2141;
+      color: #e5e7eb;
+      box-shadow: 0 1px 0 rgba(0,0,0,0.4);
+    }
+    .dark .window-controls { background-color: #2a2141; }
+    .dark .window-control-btn { color: #e5e7eb; }
+    .dark .window-control-btn:hover { color: #ffffff; background-color: #3a3151; }
+    .dark #close-btn:hover { background-color: #ef4444; color: #ffffff; }
+
+    .dark #add-files-btn, .dark #generate-report, .dark #export-file-pdf { background-color: #7c3aed !important; color: white !important; }
+    .dark #add-files-btn:hover, .dark #generate-report:hover, .dark #export-file-pdf:hover { background-color: #6d28d9 !important; }
+    .dark #view-results-btn { background-color: #16a34a !important; border-color: rgba(34,197,94,.8) !important; }
+    .dark #view-results-btn:hover { background-color: #15803d !important; }
+    .dark #run-analysis-btn { background-color: #c026d3 !important; }
+    .dark #run-analysis-btn:hover { background-color: #a21caf !important; }
+    .dark #clear-files-btn, .dark #back-to-main-btn { background-color: #4c1d95 !important; color: #e5e7eb !important; }
+    .dark #clear-files-btn:hover, .dark #back-to-main-btn:hover { background-color: #5b21b6 !important; }
+    .dark #export-txt, .dark #export-file-txt { background-color: #0d9488 !important; }
+    .dark #export-txt:hover, .dark #export-file-txt:hover { background-color: #0f766e !important; }
+    .dark #export-csv, .dark #export-file-csv { background-color: #f59e0b !important; }
+    .dark #export-csv:hover, .dark #export-file-csv:hover { background-color: #d97706 !important; }
+    .dark #help-btn, .dark #theme-toggle, .dark #lang-switcher { background-color: #3a3151 !important; }
+    .dark #help-btn:hover, .dark #theme-toggle:hover { background-color: #4c1d95 !important; }
+    .dark input[type="checkbox"]:checked { background-color: #7c3aed; }
+    .dark input[type="range"]::-webkit-slider-thumb { background-color: #7c3aed; }
+    .dark input[type="range"]::-moz-range-thumb { background-color: #7c3aed; }
+    .dark .lang-btn.active { background-color: #4c1d95 !important; color: #fff !important; }
+    .dark .text-blue-600, .dark .dark\:text-blue-400 { color: #a78bfa !important; }
+    .dark .border-blue-500, .dark .hover\:border-blue-500:hover { border-color: #7c3aed !important; }
+    .dark .animate-spin { border-bottom-color: #7c3aed; border-top-color: #7c3aed; }
+
+    /* ===== Scrollbars ===== */
+    ::-webkit-scrollbar { width: 12px; }
+    ::-webkit-scrollbar-track { background: #f3f4f6; }
+    ::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 6px; border: 3px solid #f3f4f6; }
+    ::-webkit-scrollbar-thumb:hover { background-color: #9ca3af; }
+    .dark ::-webkit-scrollbar-track { background: #1e192e; }
+    .dark ::-webkit-scrollbar-thumb { background-color: #4c1d95; border-color: #1e192e; }
+    .dark ::-webkit-scrollbar-thumb:hover { background-color: #5b21b6; }
+
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ===== Capture preview ===== */
+    #capture-preview { border: 2px dashed #9ca3af; background-color: #f3f4f6; position: relative; overflow: hidden; }
+    #capture-preview-text {
+      position: absolute; left: var(--pos-x, 30%); top: var(--pos-y, 50%);
+      transform: translate(-50%, -50%); background-color: rgba(255, 165, 0, 0.7);
+      padding: 2px 4px; border-radius: 3px; font-size: 0.65rem; white-space: nowrap;
+    }
+    .dark #capture-preview { background-color: #374151; }
+
+    .lang-btn.active { background-color: #fff; color: #3b82f6; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .result-item.excluded { opacity: 0.4; background-color: #fef2f2; text-decoration: line-through; }
+    .file-item.filtered-out { text-decoration: line-through; opacity: 0.5; }
+    .dark .file-item.filtered-out { opacity: 0.4; }
+    .dark .result-item.excluded { background-color: #4b1f1f; }
+    #file-drop-container.no-files { padding: 2.5rem 1rem; }
+    #file-drop-container.has-files { padding: 0.5rem; }
+    .hidden { display: none; }
+
+    /* ===== Modals ===== */
+    #pdf-viewer-modal,
+    #help-modal,
+    #file-export-modal {
+      z-index: 50000;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+  <!-- ===== Title bar ===== -->
+  <div id="title-bar">
+    <div id="drag-region"></div>
+    <div class="window-controls">
+      <!-- Icons will be injected by renderer.js -->
+      <button id="minimize-btn" class="window-control-btn" aria-label="Minimize" title="Minimize"></button>
+      <button id="maximize-btn" class="window-control-btn" aria-label="Maximize" title="Maximize"></button>
+      <button id="close-btn" class="window-control-btn" aria-label="Close" title="Close"></button>
+    </div>
+  </div>
+
+  <div class="content-container">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+      <header class="text-center mb-4 relative">
+        <!-- Правый верх: помощь/язык/тема -->
+        <div class="absolute top-0 right-0 flex items-center gap-4 no-drag z-[9001]" style="pointer-events:auto;">
+          <button type="button" id="help-btn" aria-label="Help" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+          </button>
+
+          <div id="lang-switcher" class="flex items-center text-sm font-medium rounded-lg bg-gray-200 dark:bg-gray-700 p-1">
+            <button type="button" class="lang-btn px-3 py-1 rounded-md" data-lang-code="en">EN</button>
+            <button type="button" class="lang-btn px-3 py-1 rounded-md" data-lang-code="et">ET</button>
+            <button type="button" class="lang-btn px-3 py-1 rounded-md" data-lang-code="ru">RU</button>
+          </div>
+
+          <button
+                type="button"
+                id="theme-toggle"
+                aria-label="Toggle theme"
+                class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+              >
+                <!-- Луна (тёмная тема) -->
+                <svg
+                  id="theme-toggle-dark-icon"
+                  class="hidden h-5 w-5"
+                  viewBox="0 0 20 20"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                >
+                  <path
+                    d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
+                  ></path>
+                </svg>
+
+                <!-- Солнце (светлая тема, бледно-оранжевое) -->
+                <svg
+                  id="theme-toggle-light-icon"
+                  class="hidden h-5 w-5"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  stroke="#FDBA74"
+                  stroke-width="1.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <!-- Диск -->
+                  <circle cx="12" cy="12" r="4" fill="#FDBA74"></circle>
+
+                  <!-- Лучи -->
+                  <path d="M12 2.5v3"></path>
+                  <path d="M12 18.5v3"></path>
+                  <path d="M2.5 12h3"></path>
+                  <path d="M18.5 12h3"></path>
+                  <path d="M4.222 4.222l2.121 2.121"></path>
+                  <path d="M17.657 17.657l2.121 2.121"></path>
+                  <path d="M4.222 19.778l2.121-2.121"></path>
+                  <path d="M17.657 6.343l2.121-2.121"></path>
+                </svg>
+         </button>
+
+        </div>
+        <!-- Левый верх: Настройки -->
+        <div class="absolute top-0 left-0 flex items-center gap-4 no-drag z-[9001]" style="pointer-events:auto;">
+            <button type="button" id="settings-btn" aria-label="Settings" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+
+            <!-- Find -->
+            <button type="button" id="find-btn" aria-label="Find"
+                    class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M21 21l-4.35-4.35M16.65 16.65A7.5 7.5 0 1110 2.5a7.5 7.5 0 016.65 14.15z" />
+              </svg>
+            </button>
+            
+        </div>
+        <h1 class="text-3xl font-bold" data-lang="appTitle">PDF Number Extractor</h1>
+        <p class="text-md text-gray-600 dark:text-gray-400" data-lang="appSubtitle">
+          Extract prefixed numbers
+        </p>
+      </header>
+
+      <main class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div id="main-section">
+          <h2 class="text-xl font-semibold mb-4" data-lang="step1Title">Step 1: Add Files & Set Options</h2>
+
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-lg font-semibold" data-lang="yourFiles">Your Files:</h3>
+            <div class="flex gap-2">
+              <button type="button" id="view-results-btn" class="hidden text-sm font-semibold py-1 px-3 rounded-lg"
+                      data-lang="viewResults">View Results</button>
+              <button type="button" id="add-files-btn" class="text-sm bg-blue-500 hover:bg-blue-600 text-white font-semibold py-1 px-3 rounded-lg" data-lang="addMoreFiles">Add More Files</button>
+              <button type="button" id="clear-files-btn" class="text-sm bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-semibold py-1 px-3 rounded-lg disabled:opacity-50" disabled data-lang="clearList">Clear List</button>
+            </div>
+          </div>
+          
+          <!-- New: File Filter Input -->
+          <div class="mb-4">
+            <input type="text" id="file-filter-input" data-lang-placeholder="filterPlaceholder" class="w-full h-10 px-3 text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Filter by file name...">
+          </div>
+
+          <div id="file-drop-container" role="button" tabindex="0" aria-label="Add PDF files"
+               class="mb-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center cursor-pointer hover:border-blue-500 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-700 flex flex-col justify-center min-h-[150px]">
+            <input type="file" id="pdf-upload" accept="application/pdf,.pdf" class="hidden" multiple />
+            <div id="file-list-content" class="w-full text-left max-h-60 overflow-y-auto"></div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 items-start">
+            <div class="space-y-3 flex flex-col items-start">
+              <div class="flex items-center">
+                <label for="prefix-input" class="block text-sm font-medium mr-3" data-lang="prefixChar">Prefix:</label>
+                <input type="text" id="prefix-input" value="W" maxlength="5" class="h-8 w-24 text-center border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+              </div>
+
+              <div class="flex items-center pt-2">
+                <input type="checkbox" id="filter-revisions-checkbox" class="h-4 w-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="filter-revisions-checkbox" class="ml-2 block text-sm" data-lang="processLatest">Process only latest revision (_rXX_ or _XX_)</label>
+              </div>
+
+              <div class="flex items-center">
+                <input type="checkbox" id="include-revision-checkbox" class="h-4 w-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="include-revision-checkbox" class="ml-2 block text-sm" data-lang="includeRevision">Include revision in reports</label>
+              </div>
+
+              <div class="flex items-center">
+                <input type="checkbox" id="filter-csv-duplicates-checkbox" class="h-4 w-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="filter-csv-duplicates-checkbox" class="ml-2 block text-sm" data-lang="removeDuplicates">Remove duplicates in CSV (keep longest text)</label>
+              </div>
+
+              <div class="flex items-center ocr-feature">
+                <input type="checkbox" id="use-ocr-checkbox" class="h-4 w-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" />
+                <label for="use-ocr-checkbox" class="ml-2 block text-sm" data-lang="useOcrLabel"></label>
+              </div>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium" data-lang="screenshotSize">Screenshot Size (pixels):</label>
+                <div class="flex items-center gap-4 mt-1">
+                  <div>
+                    <label for="capture-width" class="text-xs text-gray-600 dark:text-gray-400" data-lang="width">Width</label>
+                    <input type="number" id="capture-width" value="200" step="10" class="h-8 w-24 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                  <div>
+                    <label for="capture-height" class="text-xs text-gray-600 dark:text-gray-400" data-lang="height">Height</label>
+                    <input type="number" id="capture-height" value="88" step="10" class="h-8 w-24 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium" data-lang="textPosition">Text Position in Screenshot:</label>
+                <div class="mt-1 space-y-2">
+                  <div>
+                    <label for="position-x" class="text-xs text-gray-600 dark:text-gray-400">
+                      <span data-lang="horizontal">Horizontal (X)</span>: <span id="position-x-label">30</span>%
+                    </label>
+                    <input type="range" id="position-x" min="0" max="100" value="30" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+                  <div>
+                    <label for="position-y" class="text-xs text-gray-600 dark:text-gray-400">
+                      <span data-lang="vertical">Vertical (Y)</span>: <span id="position-y-label">50</span>%
+                    </label>
+                    <input type="range" id="position-y" min="0" max="100" value="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+
+              <div id="capture-preview" class="mt-2">
+                <div id="capture-preview-text" data-lang="text">Text</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- New: Counters -->
+          <div class="mt-6 flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
+            <div id="file-count-display" class="font-medium"></div>
+            <div id="total-matches-display" class="font-bold"></div>
+          </div>
+
+          <div class="mt-6 text-center">
+            <button
+              type="button"
+              id="run-analysis-btn"
+              class="bg-red-600 text-white font-bold py-3 px-10 rounded-lg shadow-md hover:bg-red-700 text-lg"
+              data-lang="runAnalysis">Run Analysis</button>
+          </div>
+        </div>
+
+        <div id="processing-section" class="hidden text-center py-8">
+          <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+          <p id="status" class="mt-4 text-lg" data-lang="processing">Processing…</p>
+        </div>
+
+        <div id="results-container" class="hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold" data-lang="step2Title">Step 2: Results & Export</h2>
+            <button type="button" id="back-to-main-btn" class="text-sm bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 font-semibold py-1 px-3 rounded-lg" data-lang="backToSettings">← Back to Settings</button>
+          </div>
+
+          <p id="result-summary" class="mb-6 text-gray-600 dark:text-gray-400"></p>
+
+          <div id="image-results-header" class="hidden md:flex items-center px-4 pb-2 border-b dark:border-gray-700">
+            <div class="w-1/3 font-semibold" data-lang="preview">Preview</div>
+            <div class="w-2/3 font-semibold" data-lang="comments">Comments</div>
+          </div>
+
+          <div id="image-results" class="space-y-4 mt-4 max-h-[60vh] overflow-y-auto"></div>
+
+            <div class="text-center flex flex-wrap justify-center gap-4 mt-6">
+              <button type="button" id="generate-report" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-blue-700" data-lang="downloadPdf">Download PDF Report</button>
+              <button type="button" id="export-txt" class="bg-green-600 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-green-700" data-lang="exportTxt">Export TXT (Unique)</button>
+              <button type="button" id="export-csv" class="bg-yellow-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-yellow-600" data-lang="exportCsv">Export CSV</button>
+            </div>
+        </div>
+      </main>
+
+      <footer class="text-center mt-8 text-sm text-gray-500 dark:text-gray-500">
+        <p>&copy; Yurii Milienin ESTANC-2025 <span id="footer-app-name"></span> v<span id="footer-app-version"></span></p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ===== PDF Viewer Modal ===== -->
+  <div id="pdf-viewer-modal" role="dialog" aria-modal="true" aria-labelledby="pdf-viewer-title" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full h-full flex flex-col">
+      <div class="p-2 border-b dark:border-gray-700 flex justify-between items-center bg-gray-100 dark:bg-gray-900">
+        <h3 id="pdf-viewer-title" class="text-lg font-semibold truncate">PDF Viewer</h3>
+        <button type="button" id="close-viewer-btn" class="text-2xl font-bold text-gray-600 dark:text-gray-300 hover:text-red-500 px-2" aria-label="Close viewer">&times;</button>
+      </div>
+      <iframe id="pdf-viewer-iframe" class="w-full flex-grow"></iframe>
+    </div>
+  </div>
+
+  <!-- ===== Help Modal ===== -->
+  <div id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+      <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+        <h3 id="help-modal-title" class="text-xl font-semibold" data-lang="helpTitle">Help / Instructions</h3>
+        <button type="button" id="close-help-btn" class="text-2xl font-bold text-gray-600 dark:text-gray-300 hover:text-red-500 px-2" aria-label="Close help">&times;</button>
+      </div>
+      <div id="help-modal-content" class="p-6 overflow-y-auto space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- ===== File Export Modal ===== -->
+  <div id="file-export-modal" role="dialog" aria-modal="true" aria-labelledby="file-export-title" class="hidden fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-xs flex flex-col">
+      <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center">
+        <h3 id="file-export-title" class="text-lg font-semibold">Export Report</h3>
+        <button type="button" id="close-export-modal-btn" class="text-2xl font-bold text-gray-600 dark:text-gray-300 hover:text-red-500 px-2" aria-label="Close">&times;</button>
+      </div>
+      <div class="p-6 text-center">
+        <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">Choose a format for <br /><strong id="file-export-filename" class="break-all"></strong>:</p>
+        <div class="flex flex-col space-y-3">
+          <button type="button" id="export-file-pdf" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 w-full text-sm">Export PDF</button>
+          <button type="button" id="export-file-txt" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 w-full text-sm">Export TXT (Unique)</button>
+          <button type="button" id="export-file-csv" class="bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg shadow-md hover:bg-yellow-600 w-full text-sm">Export CSV</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

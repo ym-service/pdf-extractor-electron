@@ -1,0 +1,24 @@
+﻿# electron-builder.yml
+
+# A unique identifier for your application
+appId: com.yurii.pdfextractor
+
+# The name of your application
+productName: PDF Extractor
+
+# --- Critical Part: File Inclusion ---
+
+# Specify which directories and files to include in the final app package.
+files:
+  - Frontend/app/**/* # Includes all files in your main app folder
+  - package.json       # Includes the main package.json
+
+# This tells the builder to copy your Python .exe into the app's resources.
+extraResources:
+  - from: resources # The folder you created at the project root
+    to: resources   # The destination inside the final package
+
+# --- Windows Installer Configuration ---
+win:
+  target: nsis # Creates a standard NSIS installer (.exe)
+  icon: Frontend/app/icon.ico # Optional: specify a path to your app's icon
