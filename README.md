@@ -11,6 +11,7 @@ Electron wraps the HTML/JS frontend and communicates with a Python backend that 
 | **Full (OCR)** | Includes EasyOCR + PyTorch binaries, can read rasterised drawings. | 5,5 Gb+ installer | `npm run dist:full` |
 
 Both variants share the same UI. Full bundles the Lite backend plus an additional OCR executable; users can toggle OCR inside the app when the backend is present.
+<img width="785" height="569" alt="image" src="https://github.com/user-attachments/assets/956a8d1f-069a-4edd-9430-a9745e388fde" />
 
 ## Quick Start (Windows 11)
 
