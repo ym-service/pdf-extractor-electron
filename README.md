@@ -16,6 +16,7 @@ Both variants share the same UI. Full bundles the Lite backend plus an additiona
 <div align="center">
 <img width="704" height="506" alt="image" src="https://github.com/user-attachments/assets/87dca0b9-bdb7-4efb-9438-751bc0a80f45" />
 </div>
+
 ***
 
 1. **Install Node.js LTS** (20.x or newer).
