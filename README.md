@@ -7,8 +7,8 @@ Electron wraps the HTML/JS frontend and communicates with a Python backend that 
 
 | Edition | Features | Typical size | Build command |
 | --- | --- | --- | --- |
-| **Lite** | Text extraction only, fast startup, minimal dependencies. | ~230 MB installer | `npm run dist:lite` |
-| **Full (OCR)** | Includes EasyOCR + PyTorch binaries, can read rasterised drawings. | 5,5 Gb+ installer | `npm run dist:full` |
+| **Lite** | Text extraction only, fast startup, minimal dependencies. | ~170 MB installer | `npm run dist:lite` |
+| **Full (OCR)** | Includes EasyOCR + PyTorch binaries, can read rasterised drawings. | 3.25 Gb+ installer | `npm run dist:full` |
 
 Both variants share the same UI. Full bundles the Lite backend plus an additional OCR executable; users can toggle OCR inside the app when the backend is present.
 
