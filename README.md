@@ -1,4 +1,3 @@
-
 # PDF Number Extractor — Electron (fully local)
 
 This packages your HTML app into a Windows desktop app with Electron.
@@ -6,23 +5,23 @@ All heavy logic stays in the web UI.
 
 ## Quick Start (Windows 11)
 
-1. Install Node.js LTS (currently 20.x or newer is recommended).
-2. In PowerShell, navigate to the project directory:
+1. **Install Node.js LTS** (use the current 20.x line or anything newer).
+2. **Open PowerShell** and jump into the project directory:
    ```powershell
    cd C:\pdf-extractor-electron
    ```
-3. Install the dependencies:
+3. **Install dependencies:**
    ```powershell
    npm install
    ```
-4. Run the application in development mode:
+4. **Launch the dev build:**
    ```powershell
    npm run dev
    ```
-   This opens the app window.
+   The Electron window will open automatically.
 
 ## Build MSI installer
-To create a distributable MSI installer, you first need to build the Python backend executable and then run the Electron builder.
+Creating an installer is a two-step process: package the Python backend and then let Electron Builder generate the MSI.
 
 1.  **Build the Python executable:**
     ```powershell
