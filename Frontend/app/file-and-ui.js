@@ -7,8 +7,12 @@ import { toast } from './ui-helpers.js';
 
 // A simple replacement for path.basename
 function basename(filePath) {
-  return filePath.split(/[/\\]/).pop();
+  return (filePath || "").split(/[/\\]/).pop();
 }
+
+const isFileLike = (item) => {
+  return item && typeof item === "object" && typeof item.name === "string" && typeof item.arrayBuffer === "function";
+};
 
 export const applyRevisionFilter = () => {
   const { filterRevisionsCheckbox } = dom;
@@ -48,35 +52,52 @@ export const handleFiles = async (filesOrPaths) => {
   const { allUploadedFiles } = getState();
 
   const list = Array.from(filesOrPaths || []);
-  const fileObjs = list.map(item => {
-    if (typeof item === 'string') {
-      return { path: item, name: basename(item), type: 'application/pdf' };
-    }
-    if (item instanceof File) {
-      return {
-        path: item.path || null,
-        name: item.name,
-        type: item.type || 'application/pdf',
-        _raw: item
-      };
-    }
-    return null;
-  }).filter(Boolean);
+  const normalized = [];
 
-  const needPaths = fileObjs.some(f => !f.path);
-  if (needPaths && window.electronAPI?.showOpenDialog) {
-    try {
-      const dlg = await window.electronAPI.showOpenDialog();
-      const chosen = Array.isArray(dlg?.filePaths) ? dlg.filePaths.filter(p => /\.pdf$/i.test(p)) : [];
-      if (chosen.length > 0) {
-        return handleFiles(chosen);
+  for (const item of list) {
+    if (typeof item === 'string') {
+      normalized.push({ path: item, name: basename(item), type: 'application/pdf' });
+      continue;
+    }
+
+    if (item && typeof item === 'object') {
+      const looksLikeFile = isFileLike(item);
+      const fallbackName = item.name || (item.path ? basename(item.path) : 'dropped.pdf');
+      let resolvedPath = typeof item.path === 'string' && item.path ? item.path : null;
+
+      if (!resolvedPath && looksLikeFile && typeof item.arrayBuffer === 'function' && window.electronAPI?.cacheDroppedFile) {
+        try {
+          const buffer = await item.arrayBuffer();
+          resolvedPath = await window.electronAPI.cacheDroppedFile({
+            name: fallbackName,
+            buffer: new Uint8Array(buffer),
+          });
+        } catch (err) {
+          console.error('[handleFiles] Failed to persist dropped file:', err);
+          continue;
+        }
       }
-    } catch (e) {
-      console.warn('[handleFiles] showOpenDialog failed:', e);
+
+      if (!resolvedPath) {
+        console.warn('[handleFiles] Skipping file without accessible path:', fallbackName);
+        continue;
+      }
+
+      normalized.push({
+        path: resolvedPath,
+        name: fallbackName,
+        type: item.type || 'application/pdf',
+        _raw: looksLikeFile ? item : null,
+      });
     }
   }
 
-  const newFiles = fileObjs.filter(file =>
+  if (!normalized.length) {
+    console.warn('[handleFiles] No usable files after normalization.');
+    return;
+  }
+
+  const newFiles = normalized.filter(file =>
     (/\.pdf$/i.test(file.name)) &&
     !allUploadedFiles.some(ex => (file.path && ex.path === file.path) || ex.name === file.name)
   );

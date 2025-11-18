@@ -6,7 +6,78 @@ import { openPdfViewer, closePdfViewer, openHelpModal, closeHelpModal, closeExpo
 import { updateCapturePreview, updateThemeIcons, toast, isReallyMaximized, updateMaximizeIcon } from './ui-helpers.js';
 import { setLanguage } from './i18n.js';
 
+const isWindows = navigator.userAgent.toLowerCase().includes("windows");
+
+const normalizeUriPaths = (uriList = "") => {
+    return uriList
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => line && !line.startsWith("#"))
+        .map(line => {
+            try {
+                const url = new URL(line);
+                if (url.protocol !== "file:") return null;
+                let pathname = decodeURIComponent(url.pathname || "");
+                if (/^\/([A-Za-z]:)/.test(pathname)) {
+                    pathname = pathname.replace(/^\/([A-Za-z]:)/, "$1");
+                }
+                return isWindows ? pathname.replace(/\//g, "\\") : pathname;
+            } catch {
+                return null;
+            }
+        })
+        .filter(Boolean);
+};
+
+const extractDroppedPayload = (event) => {
+    if (!event?.dataTransfer) return [];
+    const dt = event.dataTransfer;
+    if (dt.files?.length) {
+        return Array.from(dt.files);
+    }
+    if (dt.items?.length) {
+        const fromItems = Array.from(dt.items)
+            .filter(item => item.kind === "file")
+            .map(item => item.getAsFile())
+            .filter(Boolean);
+        if (fromItems.length) return fromItems;
+    }
+    const fileDrop = dt.getData("FileDrop") || dt.getData("application/x-moz-file");
+    if (fileDrop) {
+        const parsed = fileDrop
+            .split(/\r?\n/)
+            .map(line => line.trim())
+            .filter(line => /\.pdf$/i.test(line));
+        if (parsed.length) return parsed;
+    }
+    const uriPaths = normalizeUriPaths(dt.getData("text/uri-list") || "");
+    if (uriPaths.length) return uriPaths;
+    const plain = (dt.getData("text/plain") || "")
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(line => /\.pdf$/i.test(line));
+    return plain;
+};
+
+const installGlobalDragGuards = (() => {
+    let attached = false;
+    return () => {
+        if (attached) return;
+        attached = true;
+        ["dragover", "drop"].forEach(type => {
+            document.addEventListener(
+                type,
+                (event) => {
+                    event.preventDefault();
+                },
+                false
+            );
+        });
+    };
+})();
+
 export const setupEventListeners = () => {
+    installGlobalDragGuards();
     // ИСПРАВЛЕНО: Добавлены все нужные элементы из боковой панели для консистентности
     const {
         generateReportBtn,
@@ -170,21 +241,38 @@ export const setupEventListeners = () => {
             }
         });
 
-        fileDropContainer.addEventListener('dragover', e => {
+        fileDropContainer.addEventListener('dragenter', e => {
             e.preventDefault();
+            e.stopPropagation();
             fileDropContainer.classList.add('border-blue-500', 'bg-gray-50', 'dark:bg-gray-700');
         });
 
-        fileDropContainer.addEventListener('dragleave', () => {
-            fileDropContainer.classList.remove('border-blue-500', 'bg-gray-50', 'dark:bg-gray-700');
+        fileDropContainer.addEventListener('dragover', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'copy';
+            }
+        });
+
+        fileDropContainer.addEventListener('dragleave', e => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!fileDropContainer.contains(e.relatedTarget)) {
+                fileDropContainer.classList.remove('border-blue-500', 'bg-gray-50', 'dark:bg-gray-700');
+            }
         });
 
         fileDropContainer.addEventListener('drop', e => {
             e.preventDefault();
+            e.stopPropagation();
             fileDropContainer.classList.remove('border-blue-500', 'bg-gray-50', 'dark:bg-gray-700');
-            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-                handleFiles(e.dataTransfer.files);
+            const dropped = extractDroppedPayload(e);
+            if (!dropped || dropped.length === 0) {
+                toast('noFiles', {}, true);
+                return;
             }
+            handleFiles(dropped);
         });
     }
 

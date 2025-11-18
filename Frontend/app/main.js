@@ -35,23 +35,28 @@ const BACKEND_DIR = isProd
 
 const PYTHON_EXECUTABLE_PROCESS_PDFS = isProd
   ? path.join(BACKEND_DIR, "process_pdfs", "process_pdfs.exe") // ИСПРАВЛЕНО
-  : path.join(
-      BACKEND_DIR,
-      ".venv",
-      process.platform === "win32" ? path.join("Scripts", "python.exe") : path.join("bin", "python")
-    );
+  : null; // в dev выбираем путь динамически
 
 // Если у вас есть также backend_ocr, для него нужно сделать аналогично:
 const PYTHON_EXECUTABLE_BACKEND_OCR = isProd
   ? path.join(BACKEND_DIR, "backend_ocr", "backend_ocr.exe") // ДОБАВЛЕНО
-  : path.join(
-      BACKEND_DIR,
-      ".venv", // Предполагаем, что для dev-режима вы тоже запускаете его через venv
-      process.platform === "win32" ? path.join("Scripts", "python.exe") : path.join("bin", "python")
-    );
+  : null; // в dev выбираем путь динамически
 
 
 const PYTHON_SCRIPT_PATH = isProd ? null : path.join(BACKEND_DIR, "process_pdfs.py"); // Этот путь для dev, и он останется прежним.
+
+// --- выбор python в dev: корневой .venv -> backend\.venv -> системный python
+function resolvePythonDev() {
+  const projectRoot = path.resolve(__dirname, "..", "..");
+  const candidates = [
+    path.join(projectRoot, ".venv", process.platform === "win32" ? "Scripts\\python.exe" : "bin/python"),
+    path.join(BACKEND_DIR, ".venv", process.platform === "win32" ? "Scripts\\python.exe" : "bin/python"),
+  ];
+  for (const p of candidates) {
+    try { if (fsSync.existsSync(p)) return p; } catch {}
+  }
+  return "python";
+}
 
 // ---------------- Settings Management ----------------
 const DEFAULT_SETTINGS = {
@@ -75,10 +80,10 @@ async function readSettings() {
   try {
     const data = await fs.readFile(SETTINGS_PATH, "utf8");
     const parsed = JSON.parse(data);
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    return sanitizeSettingsForOcr({ ...DEFAULT_SETTINGS, ...parsed });
   } catch (error) {
     console.error("Failed to read settings:", error);
-    return DEFAULT_SETTINGS;
+    return sanitizeSettingsForOcr({ ...DEFAULT_SETTINGS });
   }
 }
 
@@ -89,6 +94,16 @@ async function writeSettings(settings) {
   } catch (error) {
     console.error("Failed to write settings:", error);
   }
+}
+
+function sanitizeSettingsForOcr(settings) {
+  if (!settings) {
+    return settings;
+  }
+  if (!isOcrAvailable && settings.use_ocr) {
+    return { ...settings, use_ocr: false };
+  }
+  return settings;
 }
 
 // --- IPC handler for getting settings ---
@@ -132,7 +147,7 @@ function isFilePath(p) {
 // ---------------- Expiration Check ----------------
 async function checkIsExpired() {
   try {
-    const configPath = path.join(__dirname, "..", "..", "Frontend", "config.json");
+    const configPath = path.join(__dirname, "..", "..", "frontend", "config.json");
     const configData = await fs.readFile(configPath, "utf8");
     const config = JSON.parse(configData);
     const expiresAtStr = config.expires_at;
@@ -233,13 +248,8 @@ function runPythonScript(command, argsArray = [], stdinPayload = null, useOCR = 
       }
     } else {
       // --- Режим Разработки (Electron запущен из исходников) ---
-      // В dev-режиме мы запускаем интерпретатор Python из виртуального окружения
-      executablePath = path.join(
-        BACKEND_DIR,
-        ".venv", // Путь к виртуальному окружению
-        process.platform === "win32" ? "Scripts" : "bin", // Папка со скриптами в зависимости от ОС
-        "python.exe" // Сам интерпретатор Python
-      );
+      // Ищем python: корневой .venv, потом backend\.venv, иначе системный
+      executablePath = resolvePythonDev();
       // Определяем путь к .py файлу, который будет передан интерпретатору Python
       // (process_pdfs_ocr.py для OCR, process_pdfs.py для обычного анализа)
       scriptPath = path.join(BACKEND_DIR, useOCR ? "process_pdfs_ocr.py" : "process_pdfs.py");
@@ -320,13 +330,16 @@ ipcMain.handle("run-analysis", async (_event, filePaths, options) => {
       )
     ).filter(Boolean);
 
-    if (absPaths.length === 0) throw new Error("No valid PDF files found.");
-    options.app_version = app.getVersion();
-    // --- Новый код: передаём флаг OCR
-    const useOCR = !!options.use_ocr;
-    const data = await runPythonScript("analyze", [JSON.stringify(options), ...absPaths], null, useOCR);
-
-    return { success: true, data };
+    if (absPaths.length === 0) throw new Error("No valid PDF files found.");
+    const normalizedOptions = { ...options, app_version: app.getVersion() };
+    const wantsOcr = Boolean(normalizedOptions.use_ocr) && isOcrAvailable;
+    if (normalizedOptions.use_ocr && !isOcrAvailable) {
+      console.warn("[run-analysis] OCR requested but backend is not included in this build. Falling back to Lite mode.");
+    }
+    const safeOptions = wantsOcr ? normalizedOptions : { ...normalizedOptions, use_ocr: false };
+    const data = await runPythonScript("analyze", [JSON.stringify(safeOptions), ...absPaths], null, wantsOcr);
+
+    return { success: true, data };
   } catch (error) {
     console.error("[run-analysis]", error);
     return { success: false, error: error.message };
@@ -343,8 +356,13 @@ ipcMain.handle("export-report", async (_event, payload) => {
       } else {
       // Создаем объект options, если он вдруг отсутствует
       payload.options = { app_version: app.getVersion() };
-      }    
-    const result = await runPythonScript("export", [], payload);
+      }
+    // ⚠️ Windows-надёжный способ: пишем JSON во временный файл и передаём путь аргументом
+    const tmpIn = path.join(app.getPath("temp"), `payload-${Date.now()}.json`);
+    await fs.writeFile(tmpIn, JSON.stringify(payload), "utf8");
+    const result = await runPythonScript("export", [tmpIn], null);
+    try { await fs.unlink(tmpIn); } catch {} // Очищаем временный файл
+
     tempFile = result?.filePath;
     if (!tempFile || !fsSync.existsSync(tempFile)) throw new Error("No file returned by backend.");
 
@@ -427,6 +445,44 @@ ipcMain.handle("open-file-in-builtin-viewer", async (_e, filePath, page = 1) => 
   }
 });
 
+function toNodeBuffer(payload) {
+  if (!payload) {
+    throw new Error("No buffer provided");
+  }
+  if (Buffer.isBuffer(payload)) {
+    return payload;
+  }
+  if (payload?.type === "Buffer" && Array.isArray(payload.data)) {
+    return Buffer.from(payload.data);
+  }
+  if (ArrayBuffer.isView(payload)) {
+    return Buffer.from(payload.buffer);
+  }
+  if (payload instanceof ArrayBuffer) {
+    return Buffer.from(payload);
+  }
+  if (Array.isArray(payload)) {
+    return Buffer.from(payload);
+  }
+  throw new Error("Unsupported buffer payload");
+}
+
+ipcMain.handle("dragdrop:cache-file", async (_event, payload) => {
+  try {
+    if (!payload || !payload.buffer) throw new Error("Invalid drop payload");
+    const dropDir = path.join(app.getPath("temp"), "pdf-extractor-drops");
+    await fs.mkdir(dropDir, { recursive: true });
+    const safeName = (payload.name || "dropped.pdf").replace(/[\\/:*?"<>|]+/g, "_");
+    const finalPath = path.join(dropDir, `${Date.now()}-${safeName}`);
+    const data = toNodeBuffer(payload.buffer);
+    await fs.writeFile(finalPath, data);
+    return finalPath;
+  } catch (error) {
+    console.error("[dragdrop:cache-file]", error);
+    throw error;
+  }
+});
+
 ipcMain.handle("open-pdf-at-page", async (_e, { filePath, page }) => {
   try {
     if (typeof filePath !== "string" || !(await statIsFile(filePath))) throw new Error("Invalid file path provided.");
@@ -448,7 +504,7 @@ ipcMain.on("open-settings-window", () => createSettingsWindow());
 ipcMain.on("check-for-updates", () => autoUpdater.checkForUpdatesAndNotify());
 ipcMain.handle("save-settings", async (_event, settings) => {
   const currentSettings = await readSettings();
-  const newSettings = { ...currentSettings, ...settings };
+  const newSettings = sanitizeSettingsForOcr({ ...currentSettings, ...settings });
   await writeSettings(newSettings);
 
   if (newSettings.language && AVAILABLE_LANGS.includes(newSettings.language)) {

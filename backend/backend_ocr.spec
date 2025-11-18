@@ -4,6 +4,12 @@ import sys
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 block_cipher = None
+if "__file__" in globals():
+    SPEC_DIR = os.path.abspath(os.path.dirname(__file__))
+else:
+    cwd = os.path.abspath(os.getcwd())
+    SPEC_DIR = cwd if os.path.basename(cwd).lower() == "backend" else os.path.join(cwd, "backend")
+BASE_DIR = SPEC_DIR
 
 
 torch_hidden = collect_submodules("torch")
@@ -21,12 +27,15 @@ if os.path.exists(torch_lib_dir):
 
 
 a = Analysis(
-    ["process_pdfs_ocr.py"], 
-    pathex=[os.path.abspath(".")],
+    [os.path.join(BASE_DIR, "process_pdfs_ocr.py")], 
+    pathex=[BASE_DIR],
     binaries=torch_binaries,
-    datas=[        
-        ("easyocr_models/craft_mlt_25k.pth", "easyocr/model"),
-        ("easyocr_models/english_g2.pth", "easyocr/model"),
+    datas=[
+        (os.path.join(BASE_DIR, "easyocr_models", "craft_mlt_25k.pth"), "easyocr/model"),
+        (os.path.join(BASE_DIR, "easyocr_models", "english_g2.pth"), "easyocr/model"),
+        (os.path.join(BASE_DIR, "ocr_engine.py"), "."),
+        (os.path.join(BASE_DIR, "report_generator_pdf.py"), "."),
+        (os.path.join(BASE_DIR, "report_generator_text.py"), "."),
     ] + easyocr_data,
     hiddenimports=[        
         "easyocr",
@@ -39,6 +48,7 @@ a = Analysis(
         "win32ctypes.pywin32",        
         "report_generator_pdf",
         "report_generator_text",
+        "ocr_engine",
     ] + torch_hidden + easyocr_hidden,
     hookspath=[],
     hooksconfig={},

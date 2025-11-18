@@ -68,6 +68,7 @@ if (!globalThis.__preloadInitialized__) {
         exportReport: (payload) => safeInvoke("export-report", payload),
 
         isOcrAvailable: () => safeInvoke("is-ocr-available"),
+        cacheDroppedFile: (payload) => safeInvoke("dragdrop:cache-file", payload),
 
         // --- File/Link Operations ---
         openExternalLink: (url) => ipcRenderer.send("open-external-link", url),

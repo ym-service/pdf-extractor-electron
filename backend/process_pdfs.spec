@@ -1,12 +1,26 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+
+if "__file__" in globals():
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+else:
+    cwd = os.path.abspath(os.getcwd())
+    BASE_DIR = cwd if os.path.basename(cwd).lower() == "backend" else os.path.join(cwd, "backend")
+
 
 a = Analysis(
-    ['process_pdfs.py'],
-    pathex=[],
+    [os.path.join(BASE_DIR, 'process_pdfs.py')],
+    pathex=[BASE_DIR],
     binaries=[],
-    datas=[],
-    hiddenimports=[],
+    datas=[
+        (os.path.join(BASE_DIR, 'report_generator_pdf.py'), '.'),
+        (os.path.join(BASE_DIR, 'report_generator_text.py'), '.'),
+    ],
+    hiddenimports=[
+        'report_generator_pdf',
+        'report_generator_text',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
